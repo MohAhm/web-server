@@ -1,13 +1,28 @@
 import http, { IncomingMessage, ServerResponse } from 'http'
 import path from 'path'
 import { promises as fs } from  'fs'
+import url from 'url'
 
 async function requestListener(req: IncomingMessage, res: ServerResponse) {
-	const filePath = path.join(__dirname, "static/index.html")
+	const parseUrl = url.parse(req.url || "")
 
-	const data = await fs.readFile(filePath, "utf-8")
+	let data = ""
+	let statusCode = 200
+	try {
+		let pathName = parseUrl.pathname
 
-	res.writeHead(200, {
+		if (pathName === "/") {
+			pathName = "/index"
+		}
+
+		const filePath = path.join(__dirname, `static${pathName}.html`)
+		data = await fs.readFile(filePath, "utf-8")
+	} catch {
+		data = await fs.readFile(path.join(__dirname, "static/404.html"), "utf-8")
+		statusCode = 404
+	}
+
+	res.writeHead(statusCode, {
 		"Content-type": "text/html",
 		"content-length": data.length
 	})
