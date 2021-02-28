@@ -3,13 +3,19 @@ import path from 'path'
 import { promises as fs } from  'fs'
 import url from 'url'
 
+interface Joke {
+	id: string
+	joke: string
+	status: number
+}
+
 async function requestListener(req: IncomingMessage, res: ServerResponse) {
-	const parseUrl = url.parse(req.url || "")
+	const parsedUrl = url.parse(req.url || "")
 
 	let data = ""
 	let statusCode = 200
 	try {
-		let pathName = parseUrl.pathname
+		let pathName = parsedUrl.pathname
 
 		if (pathName === "/") {
 			pathName = "/index"
@@ -20,6 +26,18 @@ async function requestListener(req: IncomingMessage, res: ServerResponse) {
 	} catch {
 		data = await fs.readFile(path.join(__dirname, "static/404.html"), "utf-8")
 		statusCode = 404
+	}
+
+	if (parsedUrl.pathname === "/dad-joke") {
+		const response = await fetch("https://icanhazdadjoke.com/", {
+			headers: {
+				accept: "application/json",
+				"user-agent": "NodeJS Server"
+			}
+		})
+
+		const joke: Joke = await response.json()
+		data = data.replace(/{{joke}}/gm, joke.joke)
 	}
 
 	res.writeHead(statusCode, {
